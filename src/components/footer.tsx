@@ -18,9 +18,18 @@ export function Footer() {
           <div>
             <div className="eyebrow mb-6">Quick Links</div>
             <ul className="grid grid-cols-2 gap-3 text-sm">
-              {["About", "Philosophy", "Plans", "Get Started", "Privacy Policy", "Terms of Use"].map((l) => (
-                <li key={l}>
-                  <a href="#" className="text-[var(--text-muted-dark)] hover:text-[var(--gold)] transition-colors">{l}</a>
+              {[
+                { label: "About", href: "/#about" },
+                { label: "Philosophy", href: "/#philosophy" },
+                { label: "Plans", href: "/#plans" },
+                { label: "Get Started", href: "/analytics" },
+                { label: "Privacy Policy", href: "#" },
+                { label: "Terms of Use", href: "#" },
+              ].map((l) => (
+                <li key={l.label}>
+                  <a href={l.href} className="text-[var(--text-muted-dark)] hover:text-[var(--gold)] transition-colors">
+                    {l.label}
+                  </a>
                 </li>
               ))}
             </ul>

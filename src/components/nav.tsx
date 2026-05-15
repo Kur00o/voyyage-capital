@@ -7,6 +7,7 @@ const links = [
   { to: "/#philosophy", label: "Philosophy" },
   { to: "/#plans", label: "Plans" },
   { to: "/#start", label: "Get Started" },
+  { to: "/analytics", label: "Terminal", router: true as const },
 ];
 
 export function Nav() {
@@ -15,6 +16,7 @@ export function Nav() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const isPortfolios = location.pathname.startsWith("/portfolios");
+  const isAnalytics = location.pathname.startsWith("/analytics");
 
   useEffect(() => {
     const onScroll = () => {
@@ -22,12 +24,12 @@ export function Nav() {
       // detect light section beneath nav
       const el = document.elementFromPoint(window.innerWidth / 2, 40);
       const section = el?.closest("[data-section]") as HTMLElement | null;
-      setOverLight(section?.dataset.section === "light" || isPortfolios);
+      setOverLight(section?.dataset.section === "light" || isPortfolios || isAnalytics);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [isPortfolios]);
+  }, [isPortfolios, isAnalytics]);
 
   const dark = !overLight;
   const textColor = dark ? "text-[var(--text-on-dark)]" : "text-[#1A1A1A]";
@@ -52,11 +54,17 @@ export function Nav() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-10">
-          {links.map((l) => (
-            <a key={l.to} href={l.to} className={`nav-link font-medium ${textColor}`}>
-              {l.label}
-            </a>
-          ))}
+          {links.map((l) =>
+            "router" in l && l.router ? (
+              <Link key={l.to} to={l.to} className={`nav-link font-medium ${textColor}`}>
+                {l.label}
+              </Link>
+            ) : (
+              <a key={l.to} href={l.to} className={`nav-link font-medium ${textColor}`}>
+                {l.label}
+              </a>
+            ),
+          )}
           <button className={`nav-link border ${dark ? "border-white/60 text-white" : "border-[#1A1A1A] text-[#1A1A1A]"} px-4 py-2 rounded-md`}>
             Login
           </button>
@@ -80,16 +88,27 @@ export function Nav() {
             className="fixed inset-y-0 right-0 w-full max-w-sm bg-[var(--navy)] z-50 p-10 flex flex-col gap-8"
           >
             <button onClick={() => setOpen(false)} className="nav-link text-[var(--text-on-dark)] self-end">close</button>
-            {links.map((l) => (
-              <a
-                key={l.to}
-                href={l.to}
-                onClick={() => setOpen(false)}
-                className="font-display text-3xl text-[var(--text-on-dark)]"
-              >
-                {l.label}
-              </a>
-            ))}
+            {links.map((l) =>
+              "router" in l && l.router ? (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  onClick={() => setOpen(false)}
+                  className="font-display text-3xl text-[var(--text-on-dark)]"
+                >
+                  {l.label}
+                </Link>
+              ) : (
+                <a
+                  key={l.to}
+                  href={l.to}
+                  onClick={() => setOpen(false)}
+                  className="font-display text-3xl text-[var(--text-on-dark)]"
+                >
+                  {l.label}
+                </a>
+              ),
+            )}
             <button className="btn-ghost-light self-start">Login</button>
           </motion.div>
         )}
