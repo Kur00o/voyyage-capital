@@ -8,6 +8,7 @@ import type {
   SymbolSearchResultDTO,
 } from "../types";
 import { fetchJson } from "../http";
+import { isIndianSymbol } from "../india";
 
 const BASE = "https://finnhub.io/api/v1";
 
@@ -26,6 +27,7 @@ export async function finnhubQuote(token: string, symbol: string): Promise<Quote
     open: q.o,
     prevClose: q.pc,
     timestamp: (q.t || 0) * 1000 || Date.now(),
+    currency: isIndianSymbol(symbol) ? "INR" : undefined,
     source: "finnhub",
   };
 }

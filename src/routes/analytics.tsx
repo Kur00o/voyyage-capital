@@ -10,7 +10,7 @@ export const Route = createFileRoute("/analytics")({
   head: () => ({
     meta: [
       { title: "Terminal — Voyyage" },
-      { name: "description", content: "Premium live market analytics for Voyyage subscribers." },
+      { name: "description", content: "Live NSE market terminal and model portfolios for Voyyage subscribers." },
     ],
   }),
   component: AnalyticsPage,

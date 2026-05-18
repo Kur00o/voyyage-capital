@@ -17,7 +17,7 @@ export function Hero() {
         </h1>
 
         <p className="mt-10 text-[18px] text-[var(--text-muted-dark)] max-w-[480px] mx-auto leading-relaxed">
-          Where data meets investing for your long term wealth.
+          Data-driven model portfolios for India&apos;s long-term wealth.
         </p>
 
         <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">

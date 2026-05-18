@@ -11,6 +11,7 @@ import {
   saveAdminPortfolios,
 } from "@/lib/analytics-terminal/admin-fns";
 import type { AnalyticsSessionData } from "@/lib/analytics-terminal/portfolio-schema";
+import { normalizeIndianSymbol } from "@/lib/market-data/india";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,8 +107,9 @@ function AdminEditor() {
 
   const addPosition = async () => {
     if (!activeId) return;
-    const symbol = window.prompt("Symbol (e.g. AAPL or RELIANCE.NS)?");
+    const symbol = window.prompt("NSE symbol (e.g. RELIANCE or RELIANCE.NS)?");
     if (!symbol?.trim()) return;
+    const normalized = normalizeIndianSymbol(symbol);
     const qty = Number(window.prompt("Quantity?") ?? "0");
     const avgCost = Number(window.prompt("Average cost per share?") ?? "0");
     if (!qty || qty <= 0 || avgCost < 0) return;
@@ -118,7 +120,7 @@ function AdminEditor() {
               ...p,
               positions: [
                 ...p.positions,
-                { symbol: symbol.trim().toUpperCase(), qty, avgCost },
+                { symbol: normalized, qty, avgCost },
               ],
             }
           : p,

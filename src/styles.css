@@ -84,6 +84,18 @@
   }
 }
 
+/* Terminal (/analytics): clearer card edges */
+.terminal-shell.dark {
+  --border: oklch(0.52 0.03 252);
+  --color-border: oklch(0.52 0.03 252);
+  --input: oklch(0.52 0.03 252);
+}
+.terminal-shell:not(.dark) {
+  --border: oklch(0.68 0.02 247);
+  --color-border: oklch(0.68 0.02 247);
+  --input: oklch(0.68 0.02 247);
+}
+
 @layer utilities {
   .font-display { font-family: var(--font-display); }
   .font-sans { font-family: var(--font-sans); }

@@ -3,9 +3,10 @@ import { alphaVantageDailyAdjusted, alphaVantageQuote } from "./providers/alphav
 import { finnhubCandles, finnhubQuote } from "./providers/finnhub";
 import { polygonAggregates, polygonQuote } from "./providers/polygon";
 import { twelveDataQuote, twelveDataTimeSeries } from "./providers/twelvedata";
+import { INDIAN_MARKET_DATA_PRIORITY, isIndianSymbol, symbolForTwelveData } from "./india";
 
 function parsePriority(): MarketProviderId[] {
-  const raw = process.env.MARKET_DATA_PRIORITY ?? "polygon,finnhub,twelvedata,alphavantage";
+  const raw = process.env.MARKET_DATA_PRIORITY ?? INDIAN_MARKET_DATA_PRIORITY;
   return raw
     .split(",")
     .map((s) => s.trim().toLowerCase())
@@ -16,14 +17,15 @@ function parsePriority(): MarketProviderId[] {
 
 export async function getBestQuote(symbol: string): Promise<QuoteDTO | null> {
   const priority = parsePriority();
-  const polygonKey = process.env.POLYGON_API_KEY;
-  const finnhubKey = process.env.FINNHUB_API_KEY;
-  const twelveKey = process.env.TWELVE_DATA_API_KEY;
-  const avKey = process.env.ALPHA_VANTAGE_API_KEY;
+  const polygonKey = process.env.POLYGON_API_KEY?.trim();
+  const finnhubKey = process.env.FINNHUB_API_KEY?.trim();
+  const twelveKey = process.env.TWELVE_DATA_API_KEY?.trim();
+  const avKey = process.env.ALPHA_VANTAGE_API_KEY?.trim();
+  const skipPolygon = isIndianSymbol(symbol);
 
   for (const p of priority) {
     try {
-      if (p === "polygon" && polygonKey) {
+      if (p === "polygon" && polygonKey && !skipPolygon) {
         const q = await polygonQuote(polygonKey, symbol);
         if (q) return q;
       }
@@ -32,7 +34,7 @@ export async function getBestQuote(symbol: string): Promise<QuoteDTO | null> {
         if (q) return q;
       }
       if (p === "twelvedata" && twelveKey) {
-        const q = await twelveDataQuote(twelveKey, symbol);
+        const q = await twelveDataQuote(twelveKey, symbolForTwelveData(symbol));
         if (q) return q;
       }
       if (p === "alphavantage" && avKey) {
@@ -88,29 +90,13 @@ function toYmd(sec: number): string {
 }
 
 export async function getCandles(symbol: string, range: ChartRange): Promise<{ candles: CandleDTO[]; source: MarketProviderId }> {
-  const polygonKey = process.env.POLYGON_API_KEY;
-  const finnhubKey = process.env.FINNHUB_API_KEY;
-  const twelveKey = process.env.TWELVE_DATA_API_KEY;
-  const avKey = process.env.ALPHA_VANTAGE_API_KEY;
+  const polygonKey = process.env.POLYGON_API_KEY?.trim();
+  const finnhubKey = process.env.FINNHUB_API_KEY?.trim();
+  const twelveKey = process.env.TWELVE_DATA_API_KEY?.trim();
+  const avKey = process.env.ALPHA_VANTAGE_API_KEY?.trim();
   const now = Math.floor(Date.now() / 1000);
   const from = rangeToWindowSec(range);
-
-  if (polygonKey) {
-    try {
-      const { mult, span } =
-        range === "1D"
-          ? { mult: 5, span: "minute" as const }
-          : range === "1W"
-            ? { mult: 1, span: "hour" as const }
-            : range === "1M" || range === "1Y"
-              ? { mult: 1, span: "day" as const }
-              : { mult: 1, span: "week" as const };
-      const candles = await polygonAggregates(polygonKey, symbol, mult, span, toYmd(from), toYmd(now));
-      if (candles.length) return { candles, source: "polygon" };
-    } catch {
-      /* fall through */
-    }
-  }
+  const skipPolygon = isIndianSymbol(symbol);
 
   if (finnhubKey) {
     try {
@@ -126,7 +112,7 @@ export async function getCandles(symbol: string, range: ChartRange): Promise<{ c
     try {
       const interval = range === "1W" ? "1week" : range === "MAX" ? "1month" : "1day";
       const size = range === "MAX" ? 500 : range === "1Y" ? 400 : 120;
-      const candles = await twelveDataTimeSeries(twelveKey, symbol, interval, size);
+      const candles = await twelveDataTimeSeries(twelveKey, symbolForTwelveData(symbol), interval, size);
       if (candles.length) return { candles, source: "twelvedata" };
     } catch {
       /* fall through */
@@ -137,6 +123,23 @@ export async function getCandles(symbol: string, range: ChartRange): Promise<{ c
     try {
       const candles = await alphaVantageDailyAdjusted(avKey, symbol, range === "MAX" ? "full" : "compact");
       if (candles.length) return { candles, source: "alphavantage" };
+    } catch {
+      /* fall through */
+    }
+  }
+
+  if (polygonKey && !skipPolygon) {
+    try {
+      const { mult, span } =
+        range === "1D"
+          ? { mult: 5, span: "minute" as const }
+          : range === "1W"
+            ? { mult: 1, span: "hour" as const }
+            : range === "1M" || range === "1Y"
+              ? { mult: 1, span: "day" as const }
+              : { mult: 1, span: "week" as const };
+      const candles = await polygonAggregates(polygonKey, symbol, mult, span, toYmd(from), toYmd(now));
+      if (candles.length) return { candles, source: "polygon" };
     } catch {
       /* fall through */
     }

@@ -9,7 +9,12 @@ import {
   finnhubSearch,
   finnhubStockMetrics,
 } from "@/lib/market-data/providers/finnhub";
-import { fetchJson } from "@/lib/market-data/http";
+import {
+  INDIAN_DEFAULT_WATCHLIST,
+  INDIAN_INDEX_SYMBOLS,
+  INDIAN_SECTOR_SYMBOLS,
+  rankIndianMovers,
+} from "@/lib/market-data/india";
 import { getBestQuote, getCandles, getQuotesForSymbols, type ChartRange } from "@/lib/market-data/service";
 import { enrichPortfolioEntity } from "./enrich-portfolio";
 import { readModelPortfolios } from "./portfolio-store";
@@ -36,12 +41,11 @@ export const getDashboardBundle = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => dashboardInput.parse(d))
   .handler(async ({ data }) => {
     requireSubscriber();
-    const finnhubKey = process.env.FINNHUB_API_KEY;
-    const polygonKey = process.env.POLYGON_API_KEY;
+    const finnhubKey = process.env.FINNHUB_API_KEY?.trim();
 
-    const indexSymbols = parseSymbolList("ANALYTICS_INDEX_SYMBOLS", "SPY,QQQ,DIA");
-    const defaultWatch = parseSymbolList("ANALYTICS_DEFAULT_WATCHLIST", "AAPL,MSFT,GOOGL");
-    const sectorSymbols = parseSymbolList("ANALYTICS_SECTOR_ETFS", "XLK,XLF,XLE,XLV,XLY,XLP,XLI,XLB,XLRE,XLU");
+    const indexSymbols = parseSymbolList("ANALYTICS_INDEX_SYMBOLS", INDIAN_INDEX_SYMBOLS);
+    const defaultWatch = parseSymbolList("ANALYTICS_DEFAULT_WATCHLIST", INDIAN_DEFAULT_WATCHLIST);
+    const sectorSymbols = parseSymbolList("ANALYTICS_SECTOR_SYMBOLS", INDIAN_SECTOR_SYMBOLS);
     const watchlist = [...new Set([...(data.watchlist ?? []), ...defaultWatch])].slice(0, 40);
 
     const quoteKeys = [...new Set([...indexSymbols, ...watchlist, ...sectorSymbols])];
@@ -56,34 +60,8 @@ export const getDashboardBundle = createServerFn({ method: "POST" })
       }
     }
 
-    let gainers: { symbol: string; changePercent: number }[] = [];
-    let losers: { symbol: string; changePercent: number }[] = [];
-    if (polygonKey) {
-      try {
-        type Snap = { tickers?: { ticker: string; todaysChangePerc?: number }[] };
-        const [g, l] = await Promise.all([
-          fetchJson<Snap>(
-            `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/gainers?apiKey=${encodeURIComponent(polygonKey)}`,
-          ),
-          fetchJson<Snap>(
-            `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/losers?apiKey=${encodeURIComponent(polygonKey)}`,
-          ),
-        ]);
-        gainers =
-          g.tickers?.slice(0, 8).map((t) => ({
-            symbol: t.ticker,
-            changePercent: t.todaysChangePerc ?? 0,
-          })) ?? [];
-        losers =
-          l.tickers?.slice(0, 8).map((t) => ({
-            symbol: t.ticker,
-            changePercent: t.todaysChangePerc ?? 0,
-          })) ?? [];
-      } catch {
-        gainers = [];
-        losers = [];
-      }
-    }
+    const moverSymbols = [...new Set([...defaultWatch, ...(data.watchlist ?? [])])].slice(0, 40);
+    const { gainers, losers } = rankIndianMovers(moverSymbols, quotes);
 
     const sessionData = await readModelPortfolios();
 

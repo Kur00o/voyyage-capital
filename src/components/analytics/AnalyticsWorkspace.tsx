@@ -32,22 +32,11 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { fmtINR, fmtPct } from "@/lib/format-money";
+import { displaySymbol, INDIAN_DEFAULT_CHART_SYMBOL } from "@/lib/market-data/india";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 type ChartRange = "1D" | "1W" | "1M" | "1Y" | "MAX";
-
-function fmtMoney(n: number) {
-  try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n);
-  } catch {
-    return n.toFixed(2);
-  }
-}
-
-function fmtPct(n: number) {
-  const sign = n > 0 ? "+" : "";
-  return `${sign}${n.toFixed(2)}%`;
-}
 
 function smaFromCloses(candles: { time: number; close: number }[], period: number): { time: Time; value: number }[] {
   const out: { time: Time; value: number }[] = [];
@@ -129,11 +118,10 @@ function CandlePanel({ symbol, range, dark }: { symbol: string; range: ChartRang
   }, [data, dark, symbol, range]);
 
   return (
-    <div className="rounded-lg border border-border/60 bg-card/30 overflow-hidden">
-      <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
+    <div className="rounded-lg border border-border bg-card/30 overflow-hidden">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="text-xs uppercase tracking-widest text-muted-foreground">
-          {symbol} · {range}
-          {data?.source ? ` · ${data.source}` : ""}
+          {displaySymbol(symbol)} · {range}
         </div>
         <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => refetch()} aria-label="Refresh chart">
           <RefreshCw className="h-4 w-4" />
@@ -187,28 +175,28 @@ function DashboardTab({
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-lg border border-border/60 bg-card/40 p-4">
+        <div className="rounded-lg border border-border bg-card/40 p-4">
           <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Portfolio value</div>
-          <div className="mt-2 font-display text-3xl font-light">{summary ? fmtMoney(summary.totalValue) : "—"}</div>
+          <div className="mt-2 font-display text-3xl font-light">{summary ? fmtINR(summary.totalValue) : "—"}</div>
         </div>
-        <div className="rounded-lg border border-border/60 bg-card/40 p-4">
+        <div className="rounded-lg border border-border bg-card/40 p-4">
           <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Unrealized P&amp;L</div>
           <div
             className={`mt-2 font-display text-3xl font-light ${summary && summary.unrealizedPnl < 0 ? "text-rose-400" : "text-emerald-400"}`}
           >
-            {summary ? fmtMoney(summary.unrealizedPnl) : "—"}
+            {summary ? fmtINR(summary.unrealizedPnl) : "—"}
           </div>
           <div className="text-xs text-muted-foreground mt-1">{summary ? fmtPct(summary.unrealizedPct) : ""}</div>
         </div>
-        <div className="rounded-lg border border-border/60 bg-card/40 p-4">
+        <div className="rounded-lg border border-border bg-card/40 p-4">
           <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Day P&amp;L (est.)</div>
           <div
             className={`mt-2 font-display text-3xl font-light ${summary && summary.dayPnlEstimate < 0 ? "text-rose-400" : "text-emerald-400"}`}
           >
-            {summary ? fmtMoney(summary.dayPnlEstimate) : "—"}
+            {summary ? fmtINR(summary.dayPnlEstimate) : "—"}
           </div>
         </div>
-        <div className="rounded-lg border border-border/60 bg-card/40 p-4">
+        <div className="rounded-lg border border-border bg-card/40 p-4">
           <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Last refresh</div>
           <div className="mt-2 text-sm text-muted-foreground">
             {dash.data?.fetchedAt ? new Date(dash.data.fetchedAt).toLocaleTimeString() : "—"}
@@ -220,17 +208,17 @@ function DashboardTab({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-border/60 bg-card/30 p-4">
-          <div className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Sector proxies (ETFs, live)</div>
+        <div className="rounded-lg border border-border bg-card/30 p-4">
+          <div className="text-xs uppercase tracking-widest text-muted-foreground mb-3">NSE sector indices</div>
           <div className="flex flex-wrap gap-2">
             {(dash.data?.sectors ?? []).map((s) => (
               <button
                 type="button"
                 key={s.symbol}
                 onClick={() => setChartSymbol(s.symbol)}
-                className="rounded-md border border-border/60 bg-background/50 px-2.5 py-1.5 text-left text-xs hover:border-gold/50 transition-colors"
+                className="rounded-md border border-border bg-background/50 px-2.5 py-1.5 text-left text-xs hover:border-gold/50 transition-colors"
               >
-                <div className="font-semibold">{s.symbol}</div>
+                <div className="font-semibold">{displaySymbol(s.symbol)}</div>
                 <div className={s.quote && s.quote.changePercent >= 0 ? "text-emerald-400" : "text-rose-400"}>
                   {s.quote ? fmtPct(s.quote.changePercent) : "—"}
                 </div>
@@ -238,7 +226,7 @@ function DashboardTab({
             ))}
           </div>
         </div>
-        <div className="rounded-lg border border-border/60 bg-card/30 p-4 min-h-[220px]">
+        <div className="rounded-lg border border-border bg-card/30 p-4 min-h-[220px]">
           <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Book allocation (all portfolios)</div>
           {(() => {
             const alloc = dash.data?.allocationBreakdown?.slice(0, 12) ?? [];
@@ -265,7 +253,7 @@ function DashboardTab({
                       <Cell key={alloc[i].symbol} fill={fills[i % fills.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => fmtMoney(v)} />
+                  <Tooltip formatter={(v: number) => fmtINR(v)} />
                 </PieChart>
               </ResponsiveContainer>
             );
@@ -280,7 +268,7 @@ function DashboardTab({
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 className="pl-9"
-                placeholder="Search symbol…"
+                placeholder="Search NSE symbol (e.g. RELIANCE)…"
                 value={q}
                 onChange={(e) => {
                   setQ(e.target.value);
@@ -321,8 +309,8 @@ function DashboardTab({
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-lg border border-border/60 bg-card/30 p-4">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Indices &amp; watchlist</div>
+          <div className="rounded-lg border border-border bg-card/30 p-4">
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Nifty &amp; NSE watchlist</div>
             <div className="space-y-2 max-h-48 overflow-auto pr-1">
               {(dash.data?.indices ?? []).concat(dash.data?.watchlist ?? []).map((row) => (
                 <button
@@ -331,9 +319,9 @@ function DashboardTab({
                   className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent/30"
                   onClick={() => setChartSymbol(row.symbol)}
                 >
-                  <span className="font-medium">{row.symbol}</span>
+                  <span className="font-medium">{displaySymbol(row.symbol)}</span>
                   <span className={row.quote && row.quote.changePercent >= 0 ? "text-emerald-400" : "text-rose-400"}>
-                    {row.quote ? fmtMoney(row.quote.price) : "—"}
+                    {row.quote ? fmtINR(row.quote.price) : "—"}
                   </span>
                 </button>
               ))}
@@ -341,30 +329,30 @@ function DashboardTab({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg border border-border/60 bg-card/30 p-3">
+            <div className="rounded-lg border border-border bg-card/30 p-3">
               <div className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
-                <ArrowUpRight className="h-3.5 w-3.5 text-emerald-400" /> Gainers
+                <ArrowUpRight className="h-3.5 w-3.5 text-emerald-400" /> NSE gainers
               </div>
               <ul className="space-y-1 text-sm">
                 {(dash.data?.gainers ?? []).map((g) => (
                   <li key={g.symbol} className="flex justify-between gap-2">
                     <button type="button" className="truncate hover:underline" onClick={() => setChartSymbol(g.symbol)}>
-                      {g.symbol}
+                      {displaySymbol(g.symbol)}
                     </button>
                     <span className="text-emerald-400 shrink-0">{fmtPct(g.changePercent)}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="rounded-lg border border-border/60 bg-card/30 p-3">
+            <div className="rounded-lg border border-border bg-card/30 p-3">
               <div className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
-                <ArrowDownRight className="h-3.5 w-3.5 text-rose-400" /> Losers
+                <ArrowDownRight className="h-3.5 w-3.5 text-rose-400" /> NSE losers
               </div>
               <ul className="space-y-1 text-sm">
                 {(dash.data?.losers ?? []).map((g) => (
                   <li key={g.symbol} className="flex justify-between gap-2">
                     <button type="button" className="truncate hover:underline" onClick={() => setChartSymbol(g.symbol)}>
-                      {g.symbol}
+                      {displaySymbol(g.symbol)}
                     </button>
                     <span className="text-rose-400 shrink-0">{fmtPct(g.changePercent)}</span>
                   </li>
@@ -373,8 +361,8 @@ function DashboardTab({
             </div>
           </div>
 
-          <div className="rounded-lg border border-border/60 bg-card/30 p-4">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Market news</div>
+          <div className="rounded-lg border border-border bg-card/30 p-4">
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">India market news</div>
             <ScrollArea className="h-64 pr-3">
               <ul className="space-y-3 text-sm">
                 {(dash.data?.news ?? []).map((n) => (
@@ -482,7 +470,7 @@ function PortfoliosTab({ dark }: { dark: boolean }) {
           {enriched.data?.ok ? (
             <>
               Realized (from ledger):{" "}
-              <span className={realizedLedger >= 0 ? "text-emerald-400" : "text-rose-400"}>{fmtMoney(realizedLedger)}</span>
+              <span className={realizedLedger >= 0 ? "text-emerald-400" : "text-rose-400"}>{fmtINR(realizedLedger)}</span>
             </>
           ) : null}
         </div>
@@ -500,7 +488,7 @@ function PortfoliosTab({ dark }: { dark: boolean }) {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border/60 overflow-hidden">
+      <div className="rounded-lg border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
@@ -525,21 +513,21 @@ function PortfoliosTab({ dark }: { dark: boolean }) {
                 </tr>
               ) : null}
               {rows.map((r) => (
-                <tr key={`${r.symbol}-${r.qty}`} className="border-t border-border/50 hover:bg-accent/20">
+                <tr key={`${r.symbol}-${r.qty}`} className="border-t border-border hover:bg-accent/20">
                   <td className="px-3 py-2">
                     <button type="button" className="font-medium text-gold hover:underline" onClick={() => setSheetSymbol(r.symbol)}>
                       {r.symbol}
                     </button>
                   </td>
                   <td className="px-3 py-2">{r.qty}</td>
-                  <td className="px-3 py-2">{fmtMoney(r.avgCost)}</td>
-                  <td className="px-3 py-2">{fmtMoney(r.last)}</td>
-                  <td className="px-3 py-2">{fmtMoney(r.marketValue)}</td>
+                  <td className="px-3 py-2">{fmtINR(r.avgCost)}</td>
+                  <td className="px-3 py-2">{fmtINR(r.last)}</td>
+                  <td className="px-3 py-2">{fmtINR(r.marketValue)}</td>
                   <td className="px-3 py-2">{r.allocationPct.toFixed(1)}%</td>
                   <td className="px-3 py-2 text-muted-foreground">
                     {r.dividendYieldAnnual != null ? `${(r.dividendYieldAnnual * 100).toFixed(2)}%` : "—"}
                   </td>
-                  <td className={`px-3 py-2 ${r.unrealized >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{fmtMoney(r.unrealized)}</td>
+                  <td className={`px-3 py-2 ${r.unrealized >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{fmtINR(r.unrealized)}</td>
                   <td className="px-3 py-2 capitalize text-xs">{r.strategy.replace("_", " ")}</td>
                 </tr>
               ))}
@@ -549,12 +537,12 @@ function PortfoliosTab({ dark }: { dark: boolean }) {
       </div>
 
       {activePortfolio?.transactions?.length ? (
-        <div className="rounded-lg border border-border/60 p-4">
+        <div className="rounded-lg border border-border p-4">
           <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Transaction history</div>
           <div className="overflow-x-auto max-h-48 text-xs">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-muted-foreground border-b border-border/50">
+                <tr className="text-left text-muted-foreground border-b border-border">
                   <th className="py-1 pr-2">Date</th>
                   <th className="py-1 pr-2">Side</th>
                   <th className="py-1 pr-2">Symbol</th>
@@ -567,11 +555,11 @@ function PortfoliosTab({ dark }: { dark: boolean }) {
                   .reverse()
                   .slice(0, 40)
                   .map((t) => (
-                    <tr key={t.id} className="border-b border-border/30">
+                    <tr key={t.id} className="border-b border-border">
                       <td className="py-1 pr-2 whitespace-nowrap">{t.at}</td>
                       <td className="py-1 pr-2 capitalize">{t.side}</td>
                       <td className="py-1 pr-2">{t.symbol}</td>
-                      <td className="py-1">{typeof t.amount === "number" ? fmtMoney(t.amount) : "—"}</td>
+                      <td className="py-1">{typeof t.amount === "number" ? fmtINR(t.amount) : "—"}</td>
                     </tr>
                   ))}
               </tbody>
@@ -595,7 +583,7 @@ function PortfoliosTab({ dark }: { dark: boolean }) {
               <div className="space-y-4 text-sm">
                 <div>
                   <div className="text-muted-foreground text-xs uppercase tracking-widest">Quote</div>
-                  <div className="text-2xl font-display mt-1">{detail.data.quote ? fmtMoney(detail.data.quote.price) : "—"}</div>
+                  <div className="text-2xl font-display mt-1">{detail.data.quote ? fmtINR(detail.data.quote.price) : "—"}</div>
                   {detail.data.quote ? (
                     <div className={detail.data.quote.changePercent >= 0 ? "text-emerald-400" : "text-rose-400"}>
                       {fmtPct(detail.data.quote.changePercent)}
@@ -620,7 +608,7 @@ function PortfoliosTab({ dark }: { dark: boolean }) {
                   <div className="text-muted-foreground text-xs uppercase tracking-widest mb-1">Analyst sentiment</div>
                   <ul className="space-y-1">
                     {detail.data.recommendations?.slice(0, 4).map((rec) => (
-                      <li key={rec.period} className="flex justify-between gap-2 border-b border-border/40 py-1">
+                      <li key={rec.period} className="flex justify-between gap-2 border-b border-border py-1">
                         <span>{rec.period}</span>
                         <span className="text-xs">
                           SB {rec.strongBuy} · B {rec.buy} · H {rec.hold} · S {rec.sell}
@@ -664,16 +652,17 @@ function PortfoliosTab({ dark }: { dark: boolean }) {
 
 export function AnalyticsWorkspace() {
   const [dark, setDark] = useState(true);
-  const [chartSymbol, setChartSymbol] = useState("AAPL");
+  const [chartSymbol, setChartSymbol] = useState(INDIAN_DEFAULT_CHART_SYMBOL);
 
   const shellClass = useMemo(
-    () => `min-h-screen flex flex-col bg-background text-foreground ${dark ? "dark" : ""} font-sans antialiased`,
+    () =>
+      `terminal-shell min-h-screen flex flex-col bg-background text-foreground ${dark ? "dark" : ""} font-sans antialiased`,
     [dark],
   );
 
   return (
     <div className={shellClass}>
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
             <Link to="/" className="font-display text-lg text-gold hover:opacity-90">
