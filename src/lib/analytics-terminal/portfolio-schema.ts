@@ -15,12 +15,15 @@ export const positionSchema = z.object({
   symbol: z.string().min(1).max(32),
   qty: z.number().positive(),
   avgCost: z.number().nonnegative(),
+  /** Target allocation % (model book); stored for subscriber-facing guidance. */
+  targetWeightPct: z.number().min(0).max(100).optional(),
   openedAt: z.string().optional(),
 });
 
 export const portfolioSchema = z.object({
   id: z.string().min(1).max(64),
   name: z.string().min(1).max(120),
+  description: z.string().max(500).optional(),
   positions: z.array(positionSchema).max(200),
   transactions: z.array(transactionSchema).max(2000).optional(),
 });

@@ -31,6 +31,10 @@ function parseSymbolList(envName: string, fallback: string): string[] {
     .slice(0, 40);
 }
 
+function useFinnhubForAnalytics(): boolean {
+  return (process.env.ANALYTICS_ENABLE_FINNHUB ?? "").trim().toLowerCase() === "true";
+}
+
 export const checkSubscriberAccess = createServerFn({ method: "GET" }).handler(() => {
   return getSubscriberAccess();
 });
@@ -44,6 +48,7 @@ export const getDashboardBundle = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     requireSubscriber();
     const finnhubKey = process.env.FINNHUB_API_KEY?.trim();
+    const canUseFinnhub = Boolean(finnhubKey) && useFinnhubForAnalytics();
 
     const indexSymbols = parseSymbolList("ANALYTICS_INDEX_SYMBOLS", INDIAN_INDEX_SYMBOLS);
     const defaultWatch = parseSymbolList("ANALYTICS_DEFAULT_WATCHLIST", INDIAN_DEFAULT_WATCHLIST);
@@ -56,7 +61,7 @@ export const getDashboardBundle = createServerFn({ method: "POST" })
     const quotes = await getQuotesForSymbols(quoteKeys);
 
     let news: Awaited<ReturnType<typeof finnhubMarketNews>> = [];
-    if (finnhubKey) {
+    if (canUseFinnhub) {
       try {
         news = await finnhubMarketNews(finnhubKey);
       } catch {
@@ -146,7 +151,7 @@ export const symbolSearch = createServerFn({ method: "POST" })
     const results = await yahooSearch(data.q);
     if (results.length > 0) return { results };
     const finnhubKey = process.env.FINNHUB_API_KEY?.trim();
-    if (!finnhubKey) return { results: [] };
+    if (!finnhubKey || !useFinnhubForAnalytics()) return { results: [] };
     return { results: await finnhubSearch(finnhubKey, data.q) };
   });
 
@@ -162,15 +167,16 @@ export const getHoldingDetail = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => holdingInput.parse(d))
   .handler(async ({ data }) => {
     requireSubscriber();
-    const finnhubKey = process.env.FINNHUB_API_KEY;
+    const finnhubKey = process.env.FINNHUB_API_KEY?.trim();
+    const canUseFinnhub = Boolean(finnhubKey) && useFinnhubForAnalytics();
     const symbol = data.symbol;
     const [quote, profile, recommendations, insider, news, metrics] = await Promise.all([
       getBestQuote(symbol),
-      finnhubKey ? finnhubProfile(finnhubKey, symbol) : Promise.resolve(null),
-      finnhubKey ? finnhubRecommendations(finnhubKey, symbol) : Promise.resolve([]),
-      finnhubKey ? finnhubInsider(finnhubKey, symbol) : Promise.resolve([]),
-      finnhubKey ? finnhubCompanyNews(finnhubKey, symbol) : Promise.resolve([]),
-      finnhubKey ? finnhubStockMetrics(finnhubKey, symbol) : Promise.resolve({}),
+      canUseFinnhub ? finnhubProfile(finnhubKey!, symbol) : Promise.resolve(null),
+      canUseFinnhub ? finnhubRecommendations(finnhubKey!, symbol) : Promise.resolve([]),
+      canUseFinnhub ? finnhubInsider(finnhubKey!, symbol) : Promise.resolve([]),
+      canUseFinnhub ? finnhubCompanyNews(finnhubKey!, symbol) : Promise.resolve([]),
+      canUseFinnhub ? finnhubStockMetrics(finnhubKey!, symbol) : Promise.resolve({}),
     ]);
     const pe =
       metrics.peNormalizedAnnual ??

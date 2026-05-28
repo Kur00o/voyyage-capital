@@ -6,6 +6,7 @@ export const transactionSideEnum = pgEnum("transaction_side", ["buy", "sell", "d
 export const modelPortfolios = pgTable("model_portfolios", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  description: text("description"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -19,6 +20,7 @@ export const modelPositions = pgTable(
     symbol: text("symbol").notNull(),
   qty: doublePrecision("qty").notNull(),
   avgCost: doublePrecision("avg_cost").notNull(),
+  targetWeightPct: doublePrecision("target_weight_pct"),
     openedAt: text("opened_at"),
   },
   (t) => [uniqueIndex("model_positions_portfolio_symbol_idx").on(t.portfolioId, t.symbol)],

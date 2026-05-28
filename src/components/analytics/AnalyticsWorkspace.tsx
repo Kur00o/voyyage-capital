@@ -166,8 +166,9 @@ function DashboardTab({
   const dash = useQuery({
     queryKey: ["dashboard", watchExtras],
     queryFn: () => getDashboardBundle({ data: { watchlist: watchExtras } }),
-    refetchInterval: 12_000,
-    staleTime: 5_000,
+    refetchInterval: 25_000,
+    staleTime: 15_000,
+    refetchOnWindowFocus: false,
   });
 
   const summary = dash.data?.portfolioSummary;
@@ -412,7 +413,8 @@ function PortfoliosTab({ dark }: { dark: boolean }) {
     queryKey: ["enriched", activeId, session?.portfolios.length],
     queryFn: () => getPortfoliosEnriched({ data: { portfolioId: activeId! } }),
     enabled: Boolean(activeId),
-    refetchInterval: 60_000,
+    refetchInterval: 90_000,
+    refetchOnWindowFocus: false,
   });
 
   const exportCsv = async () => {
@@ -464,6 +466,10 @@ function PortfoliosTab({ dark }: { dark: boolean }) {
           <p className="text-sm text-muted-foreground">No model portfolios published yet.</p>
         ) : null}
       </div>
+
+      {activePortfolio?.description?.trim() ? (
+        <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">{activePortfolio.description}</p>
+      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="text-sm text-muted-foreground">

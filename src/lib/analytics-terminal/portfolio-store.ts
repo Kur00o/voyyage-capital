@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/db";
+import { sql } from "drizzle-orm";
 import { modelPortfolios, modelPositions, modelTransactions } from "@/lib/db/schema";
 import {
   analyticsSessionDataSchema,
@@ -7,8 +8,19 @@ import {
   type PortfolioEntity,
 } from "./portfolio-schema";
 
+let schemaChecked = false;
+
+async function ensurePortfolioSchemaColumns(): Promise<void> {
+  if (schemaChecked) return;
+  const db = getDb();
+  await db.execute(sql`ALTER TABLE "model_portfolios" ADD COLUMN IF NOT EXISTS "description" text`);
+  await db.execute(sql`ALTER TABLE "model_positions" ADD COLUMN IF NOT EXISTS "target_weight_pct" double precision`);
+  schemaChecked = true;
+}
+
 /** Global model portfolios (admin-managed; shared by all subscribers). */
 export async function readModelPortfolios(): Promise<AnalyticsSessionData> {
+  await ensurePortfolioSchemaColumns();
   const db = getDb();
 
   const portfolioRows = await db.select().from(modelPortfolios).orderBy(modelPortfolios.name);
@@ -24,6 +36,7 @@ export async function readModelPortfolios(): Promise<AnalyticsSessionData> {
       symbol: row.symbol,
       qty: row.qty,
       avgCost: row.avgCost,
+      ...(row.targetWeightPct != null ? { targetWeightPct: row.targetWeightPct } : {}),
       ...(row.openedAt ? { openedAt: row.openedAt } : {}),
     });
     positionsByPortfolio.set(row.portfolioId, list);
@@ -48,6 +61,7 @@ export async function readModelPortfolios(): Promise<AnalyticsSessionData> {
   const portfolios: PortfolioEntity[] = portfolioRows.map((p) => ({
     id: p.id,
     name: p.name,
+    ...(p.description ? { description: p.description } : {}),
     positions: positionsByPortfolio.get(p.id) ?? [],
     transactions: transactionsByPortfolio.get(p.id),
   }));
@@ -58,6 +72,7 @@ export async function readModelPortfolios(): Promise<AnalyticsSessionData> {
 
 export async function writeModelPortfolios(data: AnalyticsSessionData): Promise<void> {
   const validated = analyticsSessionDataSchema.parse(data);
+  await ensurePortfolioSchemaColumns();
   const db = getDb();
   const now = new Date();
 
@@ -70,6 +85,7 @@ export async function writeModelPortfolios(data: AnalyticsSessionData): Promise<
       await tx.insert(modelPortfolios).values({
         id: portfolio.id,
         name: portfolio.name,
+        description: portfolio.description ?? null,
         createdAt: now,
         updatedAt: now,
       });
@@ -81,6 +97,7 @@ export async function writeModelPortfolios(data: AnalyticsSessionData): Promise<
             symbol: pos.symbol,
             qty: pos.qty,
             avgCost: pos.avgCost,
+            targetWeightPct: pos.targetWeightPct ?? null,
             openedAt: pos.openedAt ?? null,
           })),
         );
