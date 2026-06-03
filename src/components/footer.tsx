@@ -10,9 +10,13 @@ export function Footer() {
             <p className="mt-4 text-[var(--text-muted-dark)] text-sm leading-relaxed max-w-xs">
               Data-driven quantitative research for the modern Indian investor.
             </p>
-            <p className="mt-6 text-xs text-[var(--text-muted-dark)] tracking-wider">
-              SEBI Registered Research Analyst | Reg. No. INH000XXXXX
-            </p>
+            <div className="mt-6 space-y-2 text-xs text-[var(--text-muted-dark)] leading-relaxed">
+              <p><strong className="text-[var(--text-on-dark)] font-medium">Name of Research Analyst:</strong> Varun Rajesh Sontakke</p>
+              <p><strong className="text-[var(--text-on-dark)] font-medium">Registered office:</strong> F-201, Konark Indrayu Enclave - 2, NIBM Undri road, Kondhawa, Pune - 411048</p>
+              <p><strong className="text-[var(--text-on-dark)] font-medium">Mobile number:</strong> +91 9552609280</p>
+              <p><strong className="text-[var(--text-on-dark)] font-medium">SEBI Registration number:</strong> INH000026053</p>
+              <p><strong className="text-[var(--text-on-dark)] font-medium">BSE Enlistment number:</strong> 7106</p>
+            </div>
           </div>
 
           <div>
@@ -23,6 +27,7 @@ export function Footer() {
                 { label: "Philosophy", href: "/#philosophy" },
                 { label: "Privacy Policy", href: "#" },
                 { label: "Terms of Use", href: "#" },
+                { label: "Disclaimer", href: "/disclaimer" },
               ].map((l) => (
                 <li key={l.label}>
                   <a href={l.href} className="text-[var(--text-muted-dark)] hover:text-[var(--gold)] transition-colors">
@@ -49,11 +54,25 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-20 pt-8 border-t border-[var(--gold)]/10 text-center space-y-3">
-          <p className="text-xs text-[#475569]">© 2025 Voyyage Investment Technologies Pvt. Ltd. All rights reserved.</p>
-          <p className="text-xs text-[#475569] max-w-3xl mx-auto leading-relaxed">
-            Investments are subject to market risks. Please read all scheme-related documents carefully before investing. Past performance is not indicative of future results.
-          </p>
+        <div className="mt-20 pt-8 border-t border-[var(--gold)]/10 space-y-6">
+          <div className="text-xs text-[var(--text-muted-dark)] max-w-4xl mx-auto text-center space-y-4">
+            <p>
+              Voyyage is the brand name for Mr. Varun Rajesh Sontakke, SEBI Registered Part time Research Analyst
+            </p>
+            <p className="leading-relaxed">
+              <strong className="text-[var(--text-on-dark)] font-medium">SEBI Office Address:</strong><br />
+              SEBI Bhavan BKC - Plot No.C4-A, 'G' Block<br />
+              Bandra-Kurla Complex, Bandra (East),<br />
+              Mumbai – 400051, Maharashtra
+            </p>
+          </div>
+          
+          <div className="text-center space-y-3 pt-6 border-t border-[var(--gold)]/10">
+            <p className="text-xs text-[#475569] max-w-3xl mx-auto leading-relaxed">
+              Investments are subject to market risks. Please read all scheme-related documents carefully before investing. Past performance is not indicative of future results.
+            </p>
+            <p className="text-xs text-[#475569]">© {new Date().getFullYear()} Voyyage. All rights reserved.</p>
+          </div>
         </div>
       </div>
     </footer>

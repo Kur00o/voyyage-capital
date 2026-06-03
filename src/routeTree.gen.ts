@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PortfoliosRouteImport } from './routes/portfolios'
+import { Route as DisclaimerRouteImport } from './routes/disclaimer'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -17,6 +18,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const PortfoliosRoute = PortfoliosRouteImport.update({
   id: '/portfolios',
   path: '/portfolios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DisclaimerRoute = DisclaimerRouteImport.update({
+  id: '/disclaimer',
+  path: '/disclaimer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/analytics': typeof AnalyticsRoute
+  '/disclaimer': typeof DisclaimerRoute
   '/portfolios': typeof PortfoliosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/analytics': typeof AnalyticsRoute
+  '/disclaimer': typeof DisclaimerRoute
   '/portfolios': typeof PortfoliosRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/analytics': typeof AnalyticsRoute
+  '/disclaimer': typeof DisclaimerRoute
   '/portfolios': typeof PortfoliosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/analytics' | '/portfolios'
+  fullPaths: '/' | '/admin' | '/analytics' | '/disclaimer' | '/portfolios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/analytics' | '/portfolios'
-  id: '__root__' | '/' | '/admin' | '/analytics' | '/portfolios'
+  to: '/' | '/admin' | '/analytics' | '/disclaimer' | '/portfolios'
+  id: '__root__' | '/' | '/admin' | '/analytics' | '/disclaimer' | '/portfolios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   AnalyticsRoute: typeof AnalyticsRoute
+  DisclaimerRoute: typeof DisclaimerRoute
   PortfoliosRoute: typeof PortfoliosRoute
 }
 
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/portfolios'
       fullPath: '/portfolios'
       preLoaderRoute: typeof PortfoliosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/disclaimer': {
+      id: '/disclaimer'
+      path: '/disclaimer'
+      fullPath: '/disclaimer'
+      preLoaderRoute: typeof DisclaimerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analytics': {
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AnalyticsRoute: AnalyticsRoute,
+  DisclaimerRoute: DisclaimerRoute,
   PortfoliosRoute: PortfoliosRoute,
 }
 export const routeTree = rootRouteImport
