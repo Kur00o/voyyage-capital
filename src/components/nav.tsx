@@ -15,8 +15,7 @@ export function Nav() {
   const [overLight, setOverLight] = useState(false);
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const isPortfolios = location.pathname.startsWith("/portfolios");
-  const isAnalytics = location.pathname.startsWith("/analytics");
+  const isHome = location.pathname === "/";
 
   useEffect(() => {
     const onScroll = () => {
@@ -24,12 +23,12 @@ export function Nav() {
       // detect light section beneath nav
       const el = document.elementFromPoint(window.innerWidth / 2, 40);
       const section = el?.closest("[data-section]") as HTMLElement | null;
-      setOverLight(section?.dataset.section === "light" || isPortfolios || isAnalytics);
+      setOverLight(section?.dataset.section === "light" || !isHome);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [isPortfolios, isAnalytics]);
+  }, [isHome]);
 
   const dark = !overLight;
   const textColor = dark ? "text-[var(--text-on-dark)]" : "text-[#1A1A1A]";

@@ -29,6 +29,7 @@ export function Footer() {
                 { label: "Terms of Use", href: "#" },
                 { label: "Disclaimer", href: "/disclaimer" },
                 { label: "Grievances Redressal", href: "/grievances" },
+                { label: "Investor Charter", href: "/investor-charter" },
               ].map((l) => (
                 <li key={l.label}>
                   <a href={l.href} className="text-[var(--text-muted-dark)] hover:text-[var(--gold)] transition-colors">
