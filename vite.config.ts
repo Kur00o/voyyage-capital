@@ -5,12 +5,8 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import { nitro } from "nitro/vite";
 
 export default defineConfig({
-  // Vercel deployment uses Nitro. Disable the Cloudflare Worker build plugin.
+  // Disable Cloudflare Worker build — we deploy to Vercel via api/index.ts.
   cloudflare: false,
-  // preset: "vercel" ensures Node.js serverless functions, not Vercel Edge.
-  // Node.js runtime is required for node:crypto (auth) and yahoo-finance2.
-  plugins: [nitro({ preset: "vercel" })],
 });
