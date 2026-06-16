@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 // ncc bundles dist/server/index.js + all its node_modules deps into the function.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import _server from "../dist/server/index.js";
+import _server from "../dist/server/server.js";
 
 const server = _server as {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response>;
