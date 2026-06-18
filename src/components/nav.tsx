@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-
+// 
 const links = [
   { to: "/#about", label: "About" },
   { to: "/#philosophy", label: "Philosophy" },
