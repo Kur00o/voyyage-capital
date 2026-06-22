@@ -1,4 +1,4 @@
-import type { PortfolioPosition, PortfolioTransaction } from "./portfolio-schema";
+import type { PortfolioEntity, PortfolioPosition, PortfolioTransaction } from "./portfolio-schema";
 
 export const DEFAULT_MODEL_NOTIONAL = 1_000_000;
 
@@ -69,6 +69,58 @@ export function normalizeTransactions(transactions: PortfolioTransaction[]): Por
     })
     .filter((t) => t.symbol.length > 0)
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+}
+
+/** Cost basis per share for a symbol: prefer the current stored position, else
+ *  derive a weighted average from this book's buy transactions (for symbols that
+ *  have been fully sold and no longer appear in positions). */
+export function avgCostForSymbol(portfolio: PortfolioEntity, symbol: string): number {
+  const pos = portfolio.positions.find((p) => p.symbol === symbol);
+  if (pos) return pos.avgCost;
+  let qty = 0;
+  let cost = 0;
+  for (const t of portfolio.transactions ?? []) {
+    if (t.side !== "buy" || t.symbol !== symbol) continue;
+    qty += t.qty ?? 0;
+    cost += t.amount ?? (t.qty != null && t.price != null ? t.qty * t.price : 0);
+  }
+  return qty > 0 ? cost / qty : 0;
+}
+
+/** True realized P&L from the ledger: gains booked on sells (sell price − avg
+ *  cost) plus dividends received. */
+export function realizedPnlFromTransactions(portfolio: PortfolioEntity): number {
+  let realized = 0;
+  for (const t of portfolio.transactions ?? []) {
+    if (t.side === "dividend") {
+      realized += t.amount ?? 0;
+    } else if (t.side === "sell" && t.qty != null) {
+      const proceeds = t.price != null ? t.price * t.qty : t.amount ?? 0;
+      realized += proceeds - avgCostForSymbol(portfolio, t.symbol) * t.qty;
+    }
+  }
+  return realized;
+}
+
+/**
+ * Cash and realized P&L for a book — the single source of truth shared by the
+ * admin editor and the subscriber Terminal.
+ *
+ * Cash inventory is the capital not currently deployed into holdings:
+ *   cash = initialCapital − (cost basis of current holdings) + realized gains.
+ * This stays correct whether holdings were built via buy transactions or added
+ * directly to the book, because current positions are the source of truth.
+ */
+export function computePortfolioCashRealized(portfolio: PortfolioEntity): {
+  cash: number;
+  realized: number;
+  totalCost: number;
+  initialCapital: number;
+} {
+  const realized = realizedPnlFromTransactions(portfolio);
+  const totalCost = totalBookValue(portfolio.positions);
+  const initialCapital = portfolio.initialCapital ?? 0;
+  return { cash: initialCapital - totalCost + realized, realized, totalCost, initialCapital };
 }
 
 type LotState = { qty: number; avgCost: number; openedAt?: string };

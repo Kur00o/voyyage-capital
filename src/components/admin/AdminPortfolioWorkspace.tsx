@@ -32,6 +32,7 @@ import type {
 } from "@/lib/analytics-terminal/grievance-store";
 import {
   bookWeightPct,
+  computePortfolioCashRealized,
   normalizePositions,
   normalizeTransactions,
   positionBookValue,
@@ -427,6 +428,34 @@ function AdminEditor() {
 
   const bookTotal = draft ? totalBookValue(draft.positions) : 0;
 
+  // Live subscriber-facing summary, computed from the draft with the same math
+  // the Terminal uses — so admin sees exactly what subscribers will see.
+  const bookSummary = useMemo(() => {
+    if (!draft) return null;
+    const { cash, realized, totalCost, initialCapital } = computePortfolioCashRealized(draft);
+    let marketValue = 0;
+    let unrealized = 0;
+    let priced = 0;
+    for (const pos of draft.positions) {
+      const ltp = prices[pos.symbol];
+      if (ltp == null) continue;
+      marketValue += ltp * pos.qty;
+      unrealized += (ltp - pos.avgCost) * pos.qty;
+      priced += 1;
+    }
+    return {
+      cash,
+      realized,
+      totalCost,
+      initialCapital,
+      marketValue,
+      unrealized,
+      priced,
+      totalPositions: draft.positions.length,
+      accountValue: cash + marketValue,
+    };
+  }, [draft, prices]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -461,8 +490,9 @@ function AdminEditor() {
           <CardDescription className="text-sm leading-relaxed">
             Each row is a holding: NSE symbol, quantity, and average cost (INR). Target weight drives suggested
             quantity against a {fmtINR(modelNotional, { maximumFractionDigits: 0 })} reference book — adjust qty or
-            weight; aim for weights near 100%. Cash and rebalancing are not simulated here; this is the published
-            model allocation.
+            weight; aim for weights near 100%. Set the book&apos;s <strong>initial capital</strong> and the Book
+            summary below shows the live cash, unrealised and realised P&amp;L exactly as subscribers see them on the
+            Terminal — cash is initial capital minus the cost of holdings plus realised gains.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -610,6 +640,64 @@ function AdminEditor() {
                 className="mt-1 min-h-[72px]"
               />
             </div>
+
+            {bookSummary ? (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Book summary <span className="normal-case opacity-70">(what subscribers see)</span>
+                  </p>
+                  <span className="text-[11px] text-muted-foreground">
+                    Account value <strong className="text-foreground">{fmtINR(bookSummary.accountValue)}</strong>
+                    {" · "}
+                    {bookSummary.priced < bookSummary.totalPositions
+                      ? `${bookSummary.priced}/${bookSummary.totalPositions} marks loaded`
+                      : "live marks"}
+                  </span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-lg border border-border/60 bg-card/40 p-3">
+                    <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Portfolio value</div>
+                    <div className="mt-1.5 font-display text-2xl font-light">{fmtINR(bookSummary.marketValue)}</div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">Market value of holdings</div>
+                  </div>
+                  <div className="rounded-lg border border-border/60 bg-card/40 p-3">
+                    <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Cash</div>
+                    <div className={`mt-1.5 font-display text-2xl font-light ${bookSummary.cash < 0 ? "text-red-400" : ""}`}>
+                      {fmtINR(bookSummary.cash)}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">Capital − holdings cost + realized</div>
+                  </div>
+                  <div className="rounded-lg border border-border/60 bg-card/40 p-3">
+                    <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Unrealized P&amp;L</div>
+                    <div
+                      className={`mt-1.5 font-display text-2xl font-light ${bookSummary.unrealized < 0 ? "text-red-400" : "text-emerald-500"}`}
+                    >
+                      {fmtINR(bookSummary.unrealized)}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">Live mark vs avg cost</div>
+                  </div>
+                  <div className="rounded-lg border border-border/60 bg-card/40 p-3">
+                    <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Realized P&amp;L</div>
+                    <div
+                      className={`mt-1.5 font-display text-2xl font-light ${bookSummary.realized < 0 ? "text-red-400" : "text-emerald-500"}`}
+                    >
+                      {fmtINR(bookSummary.realized)}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">Booked from sells &amp; dividends</div>
+                  </div>
+                </div>
+                {bookSummary.cash < 0 ? (
+                  <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                      Holdings cost ({fmtINR(bookSummary.totalCost)}) exceeds initial capital plus realized gains, so
+                      cash is negative. Raise initial capital or trim holdings to keep the book funded.
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="rounded-lg border border-border/60 p-3">
               <div className="mb-2 flex items-center justify-between">

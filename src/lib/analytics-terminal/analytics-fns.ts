@@ -23,7 +23,8 @@ import {
   getQuotesForSymbols,
   type ChartRange,
 } from "@/lib/market-data/service";
-import { computePortfolioCashRealized, enrichPortfolioEntity } from "./enrich-portfolio";
+import { computePortfolioCashRealized } from "./admin-portfolio-math";
+import { enrichPortfolioEntity } from "./enrich-portfolio";
 import { readModelPortfolios } from "./portfolio-store";
 import { getSubscriberAccess, requireSubscriber, setPremiumAccessCookie } from "./subscriber";
 import { verifyTerminalLogin } from "./terminal-auth";
