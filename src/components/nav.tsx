@@ -8,6 +8,7 @@ const links = [
   { to: "/#plans", label: "Plans" },
   { to: "/#start", label: "Get Started" },
   { to: "/analytics", label: "Terminal", router: true as const },
+  { href: "https://insightpier.com/analyst/varunsontakke/articles/manage", label: "Blogs" },
 ];
 
 export function Nav() {
@@ -58,6 +59,10 @@ export function Nav() {
               <Link key={l.to} to={l.to} className={`nav-link font-medium ${textColor}`}>
                 {l.label}
               </Link>
+            ) : "href" in l ? (
+              <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className={`nav-link font-medium ${textColor}`}>
+                {l.label}
+              </a>
             ) : (
               <a key={l.to} href={l.to} className={`nav-link font-medium ${textColor}`}>
                 {l.label}
@@ -94,6 +99,17 @@ export function Nav() {
                 >
                   {l.label}
                 </Link>
+              ) : "href" in l ? (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setOpen(false)}
+                  className="font-display text-3xl text-[var(--text-on-dark)]"
+                >
+                  {l.label}
+                </a>
               ) : (
                 <a
                   key={l.to}
