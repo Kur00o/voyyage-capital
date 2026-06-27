@@ -2,13 +2,21 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 // 
-const links = [
+type NavLink = {
+  label: string;
+  to?: string;
+  href?: string;
+  router?: boolean;
+  button?: boolean;
+};
+
+const links: NavLink[] = [
   { to: "/#about", label: "About" },
   { to: "/#philosophy", label: "Philosophy" },
   { to: "/#plans", label: "Plans" },
   { to: "/#start", label: "Get Started" },
-  { to: "/analytics", label: "Terminal", router: true as const },
   { href: "https://insightpier.com/analyst/varunsontakke/articles/manage", label: "Blogs" },
+  { to: "/analytics", label: "Terminal", router: true, button: true },
 ];
 
 export function Nav() {
@@ -55,11 +63,19 @@ export function Nav() {
 
         <nav className="hidden md:flex items-center gap-10">
           {links.map((l) =>
-            "router" in l && l.router ? (
+            l.button && l.to ? (
+              <Link
+                key={l.to}
+                to={l.to}
+                className="rounded-[4px] bg-[#c9a96e] px-5 py-2.5 text-[13px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#b8945c]"
+              >
+                {l.label}
+              </Link>
+            ) : l.router && l.to ? (
               <Link key={l.to} to={l.to} className={`nav-link font-medium ${textColor}`}>
                 {l.label}
               </Link>
-            ) : "href" in l ? (
+            ) : l.href ? (
               <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className={`nav-link font-medium ${textColor}`}>
                 {l.label}
               </a>
@@ -90,7 +106,7 @@ export function Nav() {
           >
             <button onClick={() => setOpen(false)} className="nav-link text-[var(--text-on-dark)] self-end">close</button>
             {links.map((l) =>
-              "router" in l && l.router ? (
+              l.router && l.to ? (
                 <Link
                   key={l.to}
                   to={l.to}
@@ -99,7 +115,7 @@ export function Nav() {
                 >
                   {l.label}
                 </Link>
-              ) : "href" in l ? (
+              ) : l.href ? (
                 <a
                   key={l.href}
                   href={l.href}
